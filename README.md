@@ -13,3 +13,6 @@ Initial benchmark comparing default classifiers (Logistic Regression, Random For
 Feature importance extraction from the Gradient Boosting model. Mid-game differentials (especially objective and gold metrics) have the strongest impact on model predictions:
 
 ![Feature Importance](assets/baseline%20gradient%20boosting%20feature%20importance.png)
+
+
+#### Data scraped from gol.gg
