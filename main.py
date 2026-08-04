@@ -78,8 +78,16 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-team_a = 'AL'
-team_b = 'LNG'
+teams = ['AL', 'BLG', 'EDG', 'IG', 'NIP', 'LGD', 'LNG', 'TES', 'TT', 'WBG', 'WE']
+teams_enumerated = enumerate(teams)
+
+for i, team in teams_enumerated:
+   print(f'{i}.{team} ')
+   
+idx_a = int(input('Choose first team from above (enter number): '))
+team_a = teams[idx_a]
+idx_b = int(input('Choose second team from above (enter number): '))
+team_b = teams[idx_b]
 
 model_to_use = GradientBoostingClassifier(learning_rate=0.01, max_depth=2, n_estimators=100)
 model_to_use.fit(X_train_scaled, y_train)
