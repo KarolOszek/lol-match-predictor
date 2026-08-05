@@ -35,7 +35,6 @@ def get_teams_data():
     dfs = []
     for table in tables:
         table_html = pd.read_html(table)
-        print(table_html[0].columns.tolist())
         table_html[0] = table_html[0].rename(columns={'Unnamed: 3':'Kills', 'Unnamed: 4': 'Gold/sec','Unnamed: 5':'Towers','Unnamed: 6':'Dragons', 'Unnamed: 8':'Kills/15 minute', 'Unnamed: 9':'Gold/sec/15 minute', 'Unnamed: 10':'Towers/15 minute', 'Unnamed: 11':'Dragons/15 minute' })
         dfs.append(table_html[0])
 

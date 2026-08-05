@@ -22,27 +22,36 @@ def get_match_history(df, team_a, team_b, N=20):
 
   return diff_features
 
-
-dfs = get_teams_data()
 dfs_fixed = []
+decision = 9999
+print("Do you want to scrape new data? 1 - yes, 2 - no: ")
+while decision not in [1,2]: #preventing choosing different option
+  decision = int(input())
+  if decision not in [1,2]:
+     print('You have to choose 1 or 2')
+
+if decision == 1:
+  dfs = get_teams_data()
+
+  for df in dfs:
+    df_temp = df.copy()
+    result_col = [col for col in df_temp.columns if 'Result' in col][0]
+    team_name = result_col.replace(' Result', '').strip()
+    df_temp['Team'] = team_name
+    df_temp['Result'] = df_temp[result_col]
+    df_temp = df_temp.drop(columns=[result_col])
+    dfs_fixed.append(df_temp)
+
+  df_all = pd.concat(dfs_fixed, ignore_index=True)
+  df_all = df_all.drop(columns=['Score', 'Tournament', 'Week', 'Game'])
+  df_all['Result'] = df_all['Result'].map({'WIN':1, 'LOSS':0})
+  df_all.to_csv('teams_data.csv', index=False)
+
+else:
+   df_all = pd.read_csv('teams_data.csv')
+
 X_list = []
 y_list = []
-
-for df in dfs:
-  df_temp = df.copy()
-  result_col = [col for col in df_temp.columns if 'Result' in col][0]
-  team_name = result_col.replace(' Result', '').strip()
-  df_temp['Team'] = team_name
-  df_temp['Result'] = df_temp[result_col]
-  df_temp = df_temp.drop(columns=[result_col])
-
-  dfs_fixed.append(df_temp)
-
-df_all = pd.concat(dfs_fixed, ignore_index=True)
-print(df_all.info)
-df_all = df_all.drop(columns=['Score', 'Tournament', 'Week', 'Game'])
-df_all['Result'] = df_all['Result'].map({'WIN':1, 'LOSS':0})
-
 for idx, row in df_all.iterrows():
     team_a = row['Team']
     team_b = row['Vs']
