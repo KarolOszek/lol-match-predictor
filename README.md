@@ -34,24 +34,12 @@ Positive SHAP Value (Right side): The feature pushed the model to predict "Team 
 
 Negative SHAP Value (Left side): The feature pushed the model to predict "Team A loses".
 
-#### Deep Learning Model Insights (PyTorch)
-By analyzing the custom architecture using DeepExplainer, we can see what priorities the neural network has developed compared to the baseline trees:
-
-Key Takeaway: The model has learned that objective control (Towers, Dragons) wins games, while excessive kill differential does not.
-
-Towers_diff (Total Tower Difference): Strongest Predictor. Large tower advantages (red dots far to the right) guarantee a high win probability. Tower disadvantages (blue dots to the left) are fatal. This is perfectly in line with standard League of Legends strategy.
-
-Gold/sec_diff (Overall Gold): Second in importance. Having a consistent gold lead (red) significantly improves win chances, though not as definitively as towers.
-
-Gold/sec/15 minute_diff (Early Gold): Having a gold lead at 15 minutes is a clear positive indicator for the end game.
-
-Kills_diff & Kills/15 minute_diff (Kills Difference): Fascinating Counter-Intuitive Learning. The model's interpretation of kills is fascinating. More kills difference (red values) hurt the final win chance, and fewer kills difference (blue values) help it.
-
-Gameplay Interpretation: The model is likely learning from games where teams chase unnecessary kills instead of pushing advantages (towers, dragons), leading to a "throw." It highlights that a kill differential, by itself, is less valuable than objectives and can sometimes be a negative marker.
-
-Towers/15 minute_diff (Early Towers): A nuances result. The model seems to interpret a very massive early towers advantage (red points clustered slightly to the left) with a negative impact. This could be due to a smaller number of data points with extremely high values, or that specific, ultra-aggressive teams that take early towers also tend to throw leads more often. In contrast, medium advantages show a positive impact. (Keep in mind, a small number of points makes extreme value interpretation less reliable).
-
-Dragons (Total & Early): Following a similar pattern to gold, having more dragons overall improves win chance. An early 15-minute lead is also positive, although slightly less impactful than early gold.
+#### XAI Insights: Why the Neural Network Underperformed
+​By applying SHAP (DeepExplainer) to the PyTorch model, we uncovered a fascinating flaw in how the network interpreted the game. While it correctly identified Towers_diff and Gold/sec_diff as massive win conditions, it developed a counter-intuitive understanding of other crucial metrics.
+​Specifically, the SHAP summary plot revealed that the network assigned negative impacts to positive advantages in Dragons_diff and Kills_diff (with high/red values pushing the prediction toward a loss).
+​Why did this happen?
+In League of Legends, objectives are highly correlated (multicollinearity). A team taking multiple towers is naturally also securing gold, dragons, and kills. To avoid overestimating the win probability past 100%, the neural network mathematically "compensated" by heavily penalizing dragons and kills to balance the massive weights it assigned to towers and gold.
+​This Explainable AI (XAI) analysis perfectly demonstrates why the baseline Gradient Boosting Classifier achieved a higher accuracy (~83% vs 78.5%). Tree-based algorithms inherently handle highly correlated, tabular features much better than a simple Multi-Layer Perceptron, which ultimately got confused by the collinear nature of the match statistics
 ## Automated Data Pipeline (Web Scraping)
 The project features a built-in, automated web scraping module designed to extract the most up-to-date match history and team statistics directly from gol.gg.
 
