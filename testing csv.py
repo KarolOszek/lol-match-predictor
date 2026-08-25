@@ -29,9 +29,9 @@ columns_to_keep = [
 
 ]
 team_df_clean = team_df[columns_to_keep].copy()
-team_df['Vs'] = team_df.groupby('gameid')['teamname'].transform(lambda x: x.iloc[::-1].values)
+team_df_clean['Vs'] = team_df.groupby('gameid')['teamname'].transform(lambda x: x.iloc[::-1].values)
 
-team_df = team_df.rename(columns={
+team_df_clean = team_df_clean.rename(columns={
     'teamname': 'Team',
     'result': 'Result'
 })
@@ -41,4 +41,5 @@ today = pd.Timestamp.now(tz='UTC')
 team_df_clean['days_ago'] = (today - team_df_clean['date']).dt.days
 team_df_clean = team_df_clean.drop(columns=['date'])
 
-team_df.to_csv('teams_data.csv', index=False)
+team_df_clean.to_csv('teams_data.csv', index=False)
+print(team_df_clean)
