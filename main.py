@@ -93,6 +93,7 @@ team_b = teams[idx_b]
 
 model_to_use = GradientBoostingClassifier(learning_rate=0.01, max_depth=2, n_estimators=100)
 model_to_use.fit(X_train_scaled, y_train)
+
 #i skip gridsearchcv part to save time because i already got parameters i want
 f_ab = get_match_history(df_all, team_a=team_a, team_b=team_b, N=20).to_frame().T[X.columns].fillna(0)
 f_ba = get_match_history(df_all, team_a=team_b, team_b=team_a, N=20).to_frame().T[X.columns].fillna(0)
