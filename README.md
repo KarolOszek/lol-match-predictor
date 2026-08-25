@@ -36,6 +36,7 @@ Negative SHAP Value (Left side): The feature pushed the model to predict "Team A
 
 #### Feature Engineering: Removing "Spoilers" and Focusing on the Early Game
 ![PyTorch model shap values](assets/shap_values2.png)
+
 During the model evaluation phase using SHAP (Explainable AI), a critical issue involving multicollinearity and "data leakage" was identified. Initially, the model heavily relied on end-game statistics such as total towers_diff. Because taking towers is virtually synonymous with winning the game, the tree-based model used it as a "spoiler." This caused the model to mathematically penalize other crucial early-game advantages (like dragons or early kills) to avoid predicting probabilities over 100%.
 
 To build a truly predictive model that evaluates team playstyles and early-game momentum rather than obvious end-game outcomes, all late-game sum statistics (total towers, total kills, total deaths) were removed from the training set.
