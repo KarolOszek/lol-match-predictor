@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
 import os
 from data_scraping import get_teams_data
 
-def get_match_history(df, team_a, team_b, current_idx, N=20):
+def get_match_history(df, team_a, team_b, current_idx, N=50):
     df_past = df.loc[:current_idx-1] 
     
     team_a_matches = df_past[df_past['Team'] == team_a].tail(N)
@@ -24,9 +24,15 @@ def get_match_history(df, team_a, team_b, current_idx, N=20):
     
     if len(team_a_matches) == 0 or len(team_b_matches) == 0:
         return None
-
-    team_a_stats = team_a_matches[stats_cols].mean()
-    team_b_stats = team_b_matches[stats_cols].mean()
+    
+    def get_weighted_stats(matches):
+        weights = np.exp(-matches['days_ago'] / 90)
+        
+        weighted_avg = np.average(matches[stats_cols], weights=weights, axis=0)
+        return pd.Series(weighted_avg, index=stats_cols)
+    
+    team_a_stats = get_weighted_stats(team_a_matches)
+    team_b_stats = get_weighted_stats(team_b_matches)
 
     diff_features = team_a_stats - team_b_stats
     diff_features.index = [f'{col}_diff' for col in diff_features.index]
@@ -60,6 +66,8 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
+
+
 teams = sorted(df_all['Team'].unique())
 for i, team in enumerate(teams):
    print(f'{i}. {team}')
@@ -72,6 +80,9 @@ team_b = teams[idx_b]
 model_to_use = GradientBoostingClassifier(learning_rate=0.05, max_depth=4, n_estimators=300)
 model_to_use.fit(X_train_scaled, y_train)
 
+y_pred = model_to_use.predict(X_test_scaled)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"accuracy on test set: {accuracy * 100:.2f}%")
 #i skip gridsearchcv part to save time because i already got parameters i want
 future_idx = len(df_all)
 f_ab = get_match_history(df_all, team_a, team_b, current_idx=future_idx, N=20).to_frame().T[X.columns].fillna(0)
