@@ -34,6 +34,21 @@ Positive SHAP Value (Right side): The feature pushed the model to predict "Team 
 
 Negative SHAP Value (Left side): The feature pushed the model to predict "Team A loses".
 
+#### Feature Engineering: Removing "Spoilers" and Focusing on the Early Game
+![PyTorch model shap values](assets/shap_values2.png)
+During the model evaluation phase using SHAP (Explainable AI), a critical issue involving multicollinearity and "data leakage" was identified. Initially, the model heavily relied on end-game statistics such as total towers_diff. Because taking towers is virtually synonymous with winning the game, the tree-based model used it as a "spoiler." This caused the model to mathematically penalize other crucial early-game advantages (like dragons or early kills) to avoid predicting probabilities over 100%.
+
+To build a truly predictive model that evaluates team playstyles and early-game momentum rather than obvious end-game outcomes, all late-game sum statistics (total towers, total kills, total deaths) were removed from the training set.
+
+The updated SHAP summary plot reveals a much more accurate and logical representation of the current League of Legends meta:
+
+Turret Plates (turretplates_diff) are King: The model identified early map pressure and the ability to secure turret plates as the absolute strongest predictor of a match outcome.
+
+Laning Phase Dominance: Creep Score difference at 15 minutes (csdiffat15_diff) and Gold difference at 15 minutes (golddiffat15_diff) are the next most significant features, proving that pure mechanical advantage in the laning phase heavily dictates the game's tempo.
+
+Logical Feature Alignment: High values (red dots) in early advantages now correctly push the SHAP value to the right (positive impact on winning probability), confirming that the mathematical confusion caused by collinearity has been successfully resolved.
+
+This refined approach forces the GradientBoostingClassifier to predict outcomes based strictly on how well a team snowballs the first 15 minutes and secures neutral objectives, resulting in highly realistic match odds.
 #### XAI Insights: Why the Neural Network Underperformed
 ​By applying SHAP (DeepExplainer) to the PyTorch model, we uncovered a fascinating flaw in how the network interpreted the game. While it correctly identified Towers_diff and Gold/sec_diff as massive win conditions, it developed a counter-intuitive understanding of other crucial metrics.
 ​Specifically, the SHAP summary plot revealed that the network assigned negative impacts to positive advantages in Dragons_diff and Kills_diff (with high/red values pushing the prediction toward a loss).
