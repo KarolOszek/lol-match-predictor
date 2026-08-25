@@ -16,8 +16,8 @@ def get_match_history(df, team_a, team_b, current_idx, N=20):
     team_b_matches = df_past[df_past['Team'] == team_b].tail(N)
     
     stats_cols = [
-        'gamelength', 'kills', 'deaths', 'dragons', 'heralds', 
-        'void_grubs', 'barons', 'towers', 'firsttower', 
+        'gamelength', 'dragons', 'heralds', 
+        'void_grubs', 'barons', 'firsttower', 
         'turretplates', 'dpm', 'wpm', 'golddiffat15', 
         'killsat15', 'csdiffat15'
     ]
@@ -69,7 +69,7 @@ team_a = teams[idx_a]
 idx_b = int(input('Choose second team from above (enter number): '))
 team_b = teams[idx_b]
 
-model_to_use = GradientBoostingClassifier(learning_rate=0.01, max_depth=2, n_estimators=100)
+model_to_use = GradientBoostingClassifier(learning_rate=0.05, max_depth=4, n_estimators=300)
 model_to_use.fit(X_train_scaled, y_train)
 
 #i skip gridsearchcv part to save time because i already got parameters i want
