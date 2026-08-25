@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import shap
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier
@@ -8,65 +9,44 @@ from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
 import os
 from data_scraping import get_teams_data
 
-def get_match_history(df, team_a, team_b, N=20):
-  team_a_matches = df[df['Team'] == team_a].tail(N)
-  team_b_matches = df[df['Team'] == team_b].tail(N)
-  stats_cols = ['Kills', 'Gold/sec', 'Towers', 'Dragons',
-                  'Kills/15 minute', 'Gold/sec/15 minute',
-                  'Towers/15 minute', 'Dragons/15 minute']
-  team_a_stats = team_a_matches[stats_cols].mean()
-  team_b_stats = team_b_matches[stats_cols].mean()
+def get_match_history(df, team_a, team_b, current_idx, N=20):
+    df_past = df.loc[:current_idx-1] 
+    
+    team_a_matches = df_past[df_past['Team'] == team_a].tail(N)
+    team_b_matches = df_past[df_past['Team'] == team_b].tail(N)
+    
+    stats_cols = [
+        'gamelength', 'kills', 'deaths', 'dragons', 'heralds', 
+        'void_grubs', 'barons', 'towers', 'firsttower', 
+        'turretplates', 'dpm', 'wpm', 'golddiffat15', 
+        'killsat15', 'csdiffat15'
+    ]
+    
+    if len(team_a_matches) == 0 or len(team_b_matches) == 0:
+        return None
 
-  diff_features = team_a_stats - team_b_stats
+    team_a_stats = team_a_matches[stats_cols].mean()
+    team_b_stats = team_b_matches[stats_cols].mean()
 
-  diff_features.index = [f'{col}_diff' for col in diff_features.index]
+    diff_features = team_a_stats - team_b_stats
+    diff_features.index = [f'{col}_diff' for col in diff_features.index]
 
-  return diff_features
+    return diff_features
 
-dfs_fixed = []
-df_all = None
-decision = 9999
-print("Do you want to scrape new data? 1 - yes, 2 - no: ")
-while decision not in [1,2]: #preventing choosing different option
-  decision = int(input())
-  if decision not in [1,2]:
-     print('You have to choose 1 or 2')
-while df_all is None:
-  if decision == 1:
-    print('Wait, processing data scraping...')
-    dfs = get_teams_data()
-
-    for df in dfs:
-      df_temp = df.copy()
-      result_col = [col for col in df_temp.columns if 'Result' in col][0]
-      team_name = result_col.replace(' Result', '').strip()
-      df_temp['Team'] = team_name
-      df_temp['Result'] = df_temp[result_col]
-      df_temp = df_temp.drop(columns=[result_col])
-      dfs_fixed.append(df_temp)
-
-    df_all = pd.concat(dfs_fixed, ignore_index=True)
-    df_all = df_all.drop(columns=['Score', 'Tournament', 'Week', 'Game'])
-    df_all['Result'] = df_all['Result'].map({'WIN':1, 'LOSS':0})
-    df_all.to_csv('teams_data.csv', index=False)
-
-  else:
-    if os.path.exists('teams_data.csv'):
-      df_all = pd.read_csv('teams_data.csv')
-    else:
-      print('Error(teams_data.csv NOT FOUND) creating new file')
-      decision = 1
-
+if os.path.exists('teams_data.csv'):
+    df_all = pd.read_csv('teams_data.csv')
+else:
+    raise FileNotFoundError("Error: file teams_data.csv not found. Start preprocessing first.")
 X_list = []
 y_list = []
 for idx, row in df_all.iterrows():
     team_a = row['Team']
     team_b = row['Vs']
 
-    features = get_match_history(df_all, team_a=team_a, team_b=team_b, N=20)
-    features.name = f"{team_a}_vs_{team_b}_{idx}"
+    features = get_match_history(df_all, team_a=team_a, team_b=team_b, current_idx=idx, N=20)
 
     if features is not None and not features.isna().any():
+        features.name = f"{team_a}_vs_{team_b}_{idx}"
         X_list.append(features)
         y_list.append(row['Result'])
 
@@ -80,11 +60,9 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-teams = ['AL', 'BLG', 'EDG', 'IG', 'NIP', 'LGD', 'LNG', 'TES', 'TT', 'WBG', 'WE']
-teams_enumerated = enumerate(teams)
-
-for i, team in teams_enumerated:
-   print(f'{i}.{team} ')
+teams = sorted(df_all['Team'].unique())
+for i, team in enumerate(teams):
+   print(f'{i}. {team}')
    
 idx_a = int(input('Choose first team from above (enter number): '))
 team_a = teams[idx_a]
@@ -95,8 +73,9 @@ model_to_use = GradientBoostingClassifier(learning_rate=0.01, max_depth=2, n_est
 model_to_use.fit(X_train_scaled, y_train)
 
 #i skip gridsearchcv part to save time because i already got parameters i want
-f_ab = get_match_history(df_all, team_a=team_a, team_b=team_b, N=20).to_frame().T[X.columns].fillna(0)
-f_ba = get_match_history(df_all, team_a=team_b, team_b=team_a, N=20).to_frame().T[X.columns].fillna(0)
+future_idx = len(df_all)
+f_ab = get_match_history(df_all, team_a, team_b, current_idx=future_idx, N=20).to_frame().T[X.columns].fillna(0)
+f_ba = get_match_history(df_all, team_b, team_a, current_idx=future_idx, N=20).to_frame().T[X.columns].fillna(0)
 
 prob_a_dir1 = model_to_use.predict_proba(scaler.transform(f_ab))[0][1]
 prob_b_dir2 = model_to_use.predict_proba(scaler.transform(f_ba))[0][1]
@@ -108,3 +87,6 @@ print(f"Calculating match odds for: {team_a} vs {team_b}")
 print(f"Win chance for {team_a}: {prob_a:.1f}%")
 print(f"Win chance for {team_b}: {prob_b:.1f}%")
 
+explainer = shap.TreeExplainer(model_to_use)
+shap_values = explainer.shap_values(X_test_scaled)
+shap.summary_plot(shap_values, X_test_scaled, feature_names=X.columns)
